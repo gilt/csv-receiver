@@ -1,0 +1,35 @@
+{
+  "name": "csv-receiver",
+  "version": "0.0.0",
+  "description": "A small Lambda app that receives a CSV and pushes its row content as messages to SNS",
+  "main": "csvReceiver.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha --recursive test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gilt/csv-receiver"
+  },
+  "keywords": [
+    "lambda",
+    "csv",
+    "sns"
+  ],
+  "author": "Ryan Martin",
+  "license": "Apache 2.0",
+  "bugs": {
+    "url": "https://github.com/gilt/csv-receiver/issues"
+  },
+  "dependencies": {
+    "aws-sdk": "2.x",
+    "bluebird": "3.x",
+    "csv": "0.x"
+  },
+  "devDependencies": {
+    "aws-lambda-mock-context": "^1.1.0",
+    "sinon": "^1.17.3"
+  }
+}
