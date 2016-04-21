@@ -26,7 +26,7 @@ exports.Handler.prototype.load = function(objectBody) {
   return Promise.try(function() {
     if (!outer.event.StreamName) throw new Error("Missing StreamName");
     var existingHeader = outer.event.Metadata ? outer.event.Metadata.Header : null;
-    return csv.load(objectBody, existingHeader)
+    return csv.load(objectBody, existingHeader, outer.config.Delimiter)
     .then(function(data) {
       if (!outer.event.StreamArn) {
         return sns

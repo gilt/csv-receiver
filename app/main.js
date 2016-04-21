@@ -27,7 +27,7 @@ exports.handle = function(event, context) {
           event.Metadata = event.Metadata || {};
           event.Metadata.MultiThreading = true;
           var csv = new csvHelper.Csv();
-          return csv.load(event.Body)
+          return csv.load(event.Body, null, config.Delimiter)
           .then(function(numRows) {
             var key = "csv/" + event.StreamName + "/" + sha1(event.Body) + ".csv";
             return csv.save(config.Bucket, key)

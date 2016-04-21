@@ -27,7 +27,7 @@ exports.Handler.prototype.load = function(objectBody) {
   var existingHeader = outer.event.Metadata ? outer.event.Metadata.Header : null;
   outer.currentBatch = 0;
   outer.batches = [];
-  return csv.load(objectBody, existingHeader)
+  return csv.load(objectBody, existingHeader, outer.config.Delimiter)
   .then(function(bytesProcessed) {
     return csv.batchify({batchSize: outer.config.BatchSize || 1000})
     .then(function(batches) {
@@ -44,6 +44,7 @@ exports.Handler.prototype.processNext = function() {
       if (!outer.event.StreamName) throw new Error("Missing StreamName");
       var csvBatch = new csvHelper.Csv();
       csvBatch.body = outer.batches[outer.currentBatch];
+      csvBatch.delimiter = outer.config.Delimiter;
       csvBatch.setHeader(csv.header);
       var key = "batch/" + outer.event.StreamName + "/" + sha1(csvBatch.body) + ".csv";
       return csvBatch.save(outer.config.Bucket, key)

@@ -2,14 +2,14 @@
 A small Lambda app that receives a CSV and pushes its row content as messages to SNS
 
 ## Deployment (contributors)
-After making changes (i.e. adding a new helper function), please do the following:
+After making functionality changes, please do the following:
 
 1. Upload this zipped repo to the com.gilt.public.backoffice/lambda_functions bucket. To produce the .zip file:
 
    ```
      rm -rf node_modules
      npm install --production
-     zip -r csv-receiver.zip . -x *.git* -x *csv-receiver.zip* -x test/\* -x cloud_formation/\*
+     zip -r csv-receiver.zip . -x *.git* -x *csv-receiver.zip* -x test/\* -x cloud_formation/\* -x *aws-sdk*
    ```
 
    Unfortunately we can't use the Github .zip file directly, because it zips the code into a subdirectory named after

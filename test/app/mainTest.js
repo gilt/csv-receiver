@@ -43,6 +43,24 @@ describe('main', function() {
       );
     });
 
+    it('should save the raw, sanitized csv, and batched csv files to S3 using an alternate delimiter', function() {
+      testHelpers.s3.putObject({
+        Bucket: "aws.lambda.us-east-1.1234567890.config",
+        Key: "test.json",
+        Body: "{\"Bucket\":\"bucket\",\"Delimiter\":\"||\"}"
+      }, function() {});
+      return testHelpers.assertContextSuccess(
+        main.handle({Body: 'foo||bar\n1||2\n3||4', StreamName: "test"}, ctx),
+        ctx,
+        function(results) {
+          assert.deepEqual(results, { ETag: 's3-object-tag', BytesProcessed: 19 });
+          assert.equal(testHelpers.s3.objects["bucket/raw/test/3f9090eabb68982a352fb76ff04e7878edc46c9f.txt"], "foo||bar\n1||2\n3||4");
+          assert.equal(testHelpers.s3.objects["bucket/csv/test/3f9090eabb68982a352fb76ff04e7878edc46c9f.csv"], "foo||bar\n1||2\n3||4\n");
+          assert.equal(testHelpers.s3.objects["bucket/batch/test/1489f923c4dca729178b3e3233458550d8dddf29.csv"], "foo||bar\n1||2\n3||4\n");
+        }
+      );
+    });
+
     it('should multithread from a S3Object', function() {
       testHelpers.s3.putObject({
         Bucket: "aws.lambda.us-east-1.1234567890.config",
@@ -85,6 +103,31 @@ describe('main', function() {
           assert.equal(testHelpers.sns.messages[1], "{\"foo\":\"3\",\"bar\":\"4\"}");
           assert.equal(testHelpers.sns.messages[2], "{\"foo\":\"5\",\"bar\":\"6\"}");
           assert.deepEqual(results, { ETag: 's3-object-tag', BytesProcessed: 20 });
+        }
+      );
+    });
+
+    it('should send CSV rows - with alternate delimiter - as SNS messages', function() {
+      ctx.getRemainingTimeInMillis = function() { return 1001 };
+      testHelpers.s3.putObject({
+        Bucket: "aws.lambda.us-east-1.1234567890.config",
+        Key: "test.json",
+        Body: "{\"Bucket\":\"bucket\",\"Delimiter\":\"||\"}"
+      }, function() {});
+      testHelpers.s3.putObject({
+        Bucket: "bucket",
+        Key: "batch/test/object.csv",
+        Body: "foo||bar\n1||2\n3||4\n5||6\n"
+      }, function() {});
+      return testHelpers.assertContextSuccess(
+        main.handle({S3Object: 'bucket/batch/test/object.csv', StreamName: "test"}, ctx),
+        ctx,
+        function(results) {
+          assert.equal(testHelpers.sns.messages.length, 3);
+          assert.equal(testHelpers.sns.messages[0], "{\"foo\":\"1\",\"bar\":\"2\"}");
+          assert.equal(testHelpers.sns.messages[1], "{\"foo\":\"3\",\"bar\":\"4\"}");
+          assert.equal(testHelpers.sns.messages[2], "{\"foo\":\"5\",\"bar\":\"6\"}");
+          assert.deepEqual(results, { ETag: 's3-object-tag', BytesProcessed: 24 });
         }
       );
     });

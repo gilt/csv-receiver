@@ -37,6 +37,15 @@ describe('csvProcessor', function() {
       });
     });
 
+    it('should work with alternate delimiter', function() {
+      return csv.load("\"foo||bar\"\n\"1||2\"", null, '||')
+      .then(function(numBytes) {
+        assert.equal(numBytes, 11);
+        assert.deepEqual(csv.header, ["foo||bar"]);
+        assert.deepEqual(csv.body, [["1||2"]]);
+      });
+    });
+
     it('should pull header from the argument when given', function() {
       return csv.load("foo,bar\n1,2", ["bal", "baz"])
       .then(function(numBytes) {
@@ -331,6 +340,18 @@ describe('csvProcessor', function() {
         .then(function(csvBody) {
           assert.equal(csvBody, "1,2,3\n4,5,6\n");
           assert.equal(testHelpers.s3.objects["bucket/key"], "foo,bar,baz\n1,2,3\n4,5,6\n");
+        });
+      });
+    });
+
+    it('should use alternate delimiter', function() {
+      testHelpers.s3.clear();
+      return csv.load("foo||bar||baz\n1||2||3\n4||5||6", null, "||")
+      .then(function(numRows) {
+        return csv.save("bucket", "key")
+        .then(function(csvBody) {
+          assert.equal(csvBody, "1||2||3\n4||5||6\n");
+          assert.equal(testHelpers.s3.objects["bucket/key"], "foo||bar||baz\n1||2||3\n4||5||6\n");
         });
       });
     });
