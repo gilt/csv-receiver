@@ -43,6 +43,28 @@ describe('main', function() {
       );
     });
 
+    it('should save the sanitized and batched csv files to S3 when notified of the raw file in S3', function() {
+      testHelpers.s3.putObject({
+        Bucket: "aws.lambda.us-east-1.1234567890.config",
+        Key: "test.json",
+        Body: "{\"Bucket\":\"bucket\"}"
+      }, function() {});
+      testHelpers.s3.putObject({
+        Bucket: "bucket",
+        Key: "raw/test/new-file.csv",
+        Body: "foo,bar\n1,2\n3,4"
+      }, function() {});
+      return testHelpers.assertContextSuccess(
+        main.handle({Records: [{s3: {bucket: {name: "bucket"}, object: {key: "raw/test/new-file.csv"}}}]}, ctx),
+        ctx,
+        function(results) {
+          assert.deepEqual(results, { ETag: 's3-object-tag', BytesProcessed: 16 });
+          assert.equal(testHelpers.s3.objects["bucket/csv/test/e2ba07aba1890652a8723057c64a0afa50ea3fae.csv"], "foo,bar\n1,2\n3,4\n");
+          assert.equal(testHelpers.s3.objects["bucket/batch/test/1489f923c4dca729178b3e3233458550d8dddf29.csv"], "foo,bar\n1,2\n3,4\n");
+        }
+      );
+    });
+
     it('should save the raw, sanitized csv, and batched csv files to S3 using an alternate delimiter', function() {
       testHelpers.s3.putObject({
         Bucket: "aws.lambda.us-east-1.1234567890.config",

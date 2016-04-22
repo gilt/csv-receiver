@@ -1,0 +1,134 @@
+#!/bin/bash
+PROGRAM_NAME="${0##*/}"
+
+function usage
+{
+   echo "$PROGRAM_NAME -f function-name -b bucket-name"
+   echo "where: "
+   echo "       -b bucket-name        => S3 that will trigger the notification"
+   echo "       -d sub-directory      => Optional prefix to filter objects in the bucket, i.e. by subdirectory"
+   echo "       -f function-name      => Function that will receive the notifications from S3"
+   echo "       -d sub-directory      => Optional prefix to filter objects in the bucket, i.e. by subdirectory"
+   echo "       -p profile-name       => AWS profile name; defaults to 'default'"
+   echo
+}
+
+AWS_PROFILE=""
+BUCKET_NAME=""
+FUNCTION_NAME=""
+SUBDIR=""
+
+while getopts ":d:b:f:p:h" opt
+do
+        case $opt in
+            b)  
+                BUCKET_NAME="$OPTARG"
+                ;;  
+            d)  
+                SUBDIR="$OPTARG"
+                ;;  
+            f)  
+                FUNCTION_NAME="$OPTARG"
+                ;;  
+            p)  
+                AWS_PROFILE="$OPTARG"
+                ;;  
+            :)  echo "ERROR ($PROGRAM_NAME): Option $OPTARG is missing an argument"
+                 exit 2
+                ;;  
+
+            \?) echo "ERROR ($PROGRAM_NAME): Option $OPTARG is an unknown option"
+                usage
+                exit 3
+                ;;
+
+            h|*)
+                usage
+                exit 1
+                ;;
+        esac
+done
+
+shift $((OPTIND - 1))
+
+if [[ "$AWS_PROFILE" == "" ]]
+then
+    AWS_PROFILE="default"
+fi
+
+if [[ "$BUCKET_NAME" == "" ]]
+then
+    echo "ERROR ($PROGRAM_NAME): bucket name '$BUCKET_NAME' cannot be empty"
+    usage
+    exit 2
+fi
+
+if [[ "$FUNCTION_NAME" == "" ]]
+then
+    echo "ERROR ($PROGRAM_NAME): function name '$FUNCTION_NAME' cannot be empty"
+    usage
+    exit 2
+fi
+
+aws lambda add-permission \
+  --profile "$AWS_PROFILE" \
+  --function-name "$FUNCTION_NAME" \
+  --statement-id 1001 \
+  --principal s3.amazonaws.com \
+  --action lambda:InvokeFunction \
+  --source-arn "arn:aws:s3:::$BUCKET_NAME" \
+
+FUNCTION_ARN=$(aws lambda get-function-configuration \
+  --profile "$AWS_PROFILE" \
+  --function-name "$FUNCTION_NAME" \
+  --output text \
+  --query 'FunctionArn'
+)
+echo FUNCTION_ARN=$FUNCTION_ARN
+
+NOTIFICATION_CONFIG=$(aws s3api get-bucket-notification-configuration \
+  --profile aws-backoffice \
+  --bucket "$BUCKET_NAME"
+)
+
+if [[ "$SUBDIR" == "" ]]
+then
+  NEW_NOTIFICATION_CONFIG='{
+    "LambdaFunctionArn": "'$FUNCTION_ARN'",
+    "Events": ["s3:ObjectCreated:*"]
+  }'
+else
+  NEW_NOTIFICATION_CONFIG='{
+    "LambdaFunctionArn": "'$FUNCTION_ARN'",
+    "Events": ["s3:ObjectCreated:*"],
+    "Filter": {
+      "Key": {
+        "FilterRules": [
+          {
+            "Name": "prefix",
+            "Value": "'$SUBDIR'"
+          }
+        ]
+      }
+    }
+  }'
+fi
+
+NEW_NOTIFICATION_CONFIG=$(echo $NEW_NOTIFICATION_CONFIG | sed s/\\n//g | sed s/'\/'/'\\\/'/g)
+
+if [[ "$NOTIFICATION_CONFIG" == "" ]]
+then
+  NOTIFICATION_CONFIG='{
+    "LambdaFunctionConfigurations": [
+      '$NEW_NOTIFICATION_CONFIG'
+    ]
+  }'
+else
+  NOTIFICATION_CONFIG=$(echo $NOTIFICATION_CONFIG | sed s/"LambdaFunctionConfigurations\"\: \["/"LambdaFunctionConfigurations\"\: \[ $NEW_NOTIFICATION_CONFIG,"/)
+fi
+
+echo "NEW_NOTIFICATION=$NOTIFICATION_CONFIG"
+aws s3api put-bucket-notification-configuration \
+  --profile "$AWS_PROFILE" \
+  --bucket "$BUCKET_NAME" \
+  --notification-configuration "$NOTIFICATION_CONFIG"

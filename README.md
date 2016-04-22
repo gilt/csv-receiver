@@ -1,6 +1,12 @@
 # csv-receiver
 A small Lambda app that receives a CSV and pushes its row content as messages to SNS
 
+## Setting up S3 Notifications
+You should set up notifications from your target CSV bucket to call this Lambda function. Since this will
+be very specific to your setup, the CloudFormation template doesn't cover this. But there is a [shell command
+file](bin/setup-s3-notification) included that you can use to add notifications from S3 to the function
+created by the CloudFormation stack.
+
 ## Deployment (contributors)
 After making functionality changes, please do the following:
 
