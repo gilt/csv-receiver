@@ -1,11 +1,34 @@
 # csv-receiver
-A small Lambda app that receives a CSV and pushes its row content as messages to SNS
+A small Lambda app that receives a CSV and pushes its row content as JSON messages to SNS.
+
+Once deployed to your AWS account, you can pass CSVs through the system through any of these channels:
+
+1. HTTP POST the CSV contents to the endpoint listed in the stack outputs, followed by the stream name:
+
+```
+curl -X POST -H "Content-Type: text/plain" -d "foo,bar
+11,22
+33,44" "https://{some-unique-id}.execute-api.us-east-1.amazonaws.com/prod/{stream-name}"
+```
+
+2. Upload a CSV to S3 and [notify the Lambda function](#setting-up-s3-notifications)
+
+
+## Deployment (users)
+To deploy this stack to your AWS account, simply do the following:
+
+1. Create a S3 bucket where the CSVs can be saved
+2. Create a CloudFormation stack using the [csv-receiver-deploy.template](https://s3.amazonaws.com/com.gilt.public.backoffice/cloudformation_templates/csv-receiver-deploy.template)
+
+That's it!
+
 
 ## Setting up S3 Notifications
 You should set up notifications from your target CSV bucket to call this Lambda function. Since this will
 be very specific to your setup, the CloudFormation template doesn't cover this. But there is a [shell command
 file](bin/setup-s3-notification) included that you can use to add notifications from S3 to the function
 created by the CloudFormation stack.
+
 
 ## Deployment (contributors)
 After making functionality changes, please do the following:
