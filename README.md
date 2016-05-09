@@ -30,6 +30,17 @@ file](bin/setup-s3-notification) included that you can use to add notifications 
 created by the CloudFormation stack.
 
 
+## Alerts
+The CloudFormation template automatically creates these metrics:
+
+1. Errors
+2. Messages published
+
+You will need to set up alerts based on these metrics to notify through your preferred channel. Errors should be
+0, so any non-zero count should trigger an alert. Messages published will depend on your workload; you can also
+duplicate the metric for stream-specific counts.
+
+
 ## Deployment (contributors)
 After making functionality changes, please do the following:
 

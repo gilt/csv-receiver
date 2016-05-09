@@ -242,6 +242,46 @@
         "CsvReceiverFunction",
         "NotificationQueue"
       ]
+    },
+    "ErrorMetric": {
+      "Type": "Custom::PutMetricFilter",
+      "Properties": {
+        "ServiceToken": { "Fn::GetAtt" : ["CFHelper", "CloudWatchLogsPutMetricFilterFunctionArn"] },
+        "filterName": "csv-receiver-errors",
+        "filterPattern": "Error",
+        "logGroupName": { "Fn::Join": [ "", ["/aws/lambda/", { "Ref": "CsvReceiverFunction" } ] ] },
+        "metricTransformations": [
+          {
+            "metricName": "csv-receiver-errors",
+            "metricNamespace": "csv-receiver",
+            "metricValue": "1"
+          }
+        ]
+      },
+      "DependsOn": [
+        "CFHelper",
+        "CsvReceiverFunction"
+      ]
+    },
+    "MessagesMetric": {
+      "Type": "Custom::PutMetricFilter",
+      "Properties": {
+        "ServiceToken": { "Fn::GetAtt" : ["CFHelper", "CloudWatchLogsPutMetricFilterFunctionArn"] },
+        "filterName": "messages-published-to-sns",
+        "filterPattern": "Published message to SNS",
+        "logGroupName": { "Fn::Join": [ "", ["/aws/lambda/", { "Ref": "CsvReceiverFunction" } ] ] },
+        "metricTransformations": [
+          {
+            "metricName": "messages-published-to-sns",
+            "metricNamespace": "csv-receiver",
+            "metricValue": "1"
+          }
+        ]
+      },
+      "DependsOn": [
+        "CFHelper",
+        "CsvReceiverFunction"
+      ]
     }
   },
   "Outputs": {
