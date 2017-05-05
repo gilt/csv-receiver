@@ -20,6 +20,7 @@ exports.handle = function(event, context) {
           var objectKey = event.Records[0].s3.object.key;
           var cleanObjectKey = objectKey.replace(/^raw\//, '');
           var streamName = cleanObjectKey.substr(0, cleanObjectKey.lastIndexOf('/'));
+          console.info('Processing ' + bucket + '/' + objectKey);
           return s3.getObjectAsync({
             Bucket: bucket,
             Key: objectKey
@@ -62,7 +63,8 @@ exports.handle = function(event, context) {
       if (event.Body) {
         var csv = new csvHelper.Csv();
         return csv.load(event.Body, null, config.Delimiter)
-        .then(function(numRows) {
+        .then(function(numChars) {
+          console.info('Rows in CSV file: ' + csv.body.length);
           var key = "csv/" + event.StreamName + "/" + sha1(event.Body) + ".csv";
           return csv.save(config.Bucket, key)
           .then(function() {
